@@ -1,0 +1,8 @@
+phish-checker/
+  app.py
+  requirements.txt
+  templates/
+    index.html
+  static/
+    app.js
+    style.css
