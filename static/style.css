@@ -25,7 +25,7 @@ body {
 
 h1 {
     font-size: 20px;
-    font-family: 'press start 2P', sans-serif;
+    font-family: 'Press Start 2P', sans-serif;
     text-align: center;
 }
 
@@ -64,3 +64,31 @@ button {
     border: none;
     cursor: pointer;
 }
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+.result {
+  width: 100%;
+  padding: 12px;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: bold;
+  white-space: pre-line;
+}
+
+.hidden {
+  display: none;
+}
+
+.result.legit {
+  background: #1f7a1f;
+  color: white;
+}
+
+.result.phishing {
+  background: #7a1f1f;
+  color: white;
+}
+.result.error { background: orange; }
