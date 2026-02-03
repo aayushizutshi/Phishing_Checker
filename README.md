@@ -30,7 +30,7 @@ When a SOC analyst receives a suspicious link, they need a safe way to investiga
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/your-username/phishing-checker.git](https://github.com/your-username/phishing-checker.git)
+   git clone [https://github.com/aayushizutshi/phishing-checker.git](https://github.com/aayushizutshi/phishing-checker.git)
    cd phishing-checker
 1. run `npm install`.
 2. Register for a free API key at VirusTotal.
