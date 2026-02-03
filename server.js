@@ -16,21 +16,17 @@ app.get('/', (req, res) => {
 });
 
 // The "Secure Bridge" - This is where we will eventually add API calls
-app.post('/analyze', async(req, res) => {
-    const { url } = req.body;
-    const API_KEY = process.env.VT_API_KEY;
-    if (!API_KEY) {
-        // Fallback if no API key is set yet
-        return res.json({ 
-            status: "Local Heuristics Only", 
-            message: "Server is running, but API key is missing." 
-        });
-    }
-    
+app.post('/analyze', async (req, res) => {
     try {
-        // VirusTotal V3 encoding logic
+        const { url } = req.body;
+        const API_KEY = process.env.VT_API_KEY;
+
+        if (!url) return res.status(400).json({ error: "No URL provided" });
+        if (!API_KEY) return res.json({ status: "No API Key", message: "Check your .env file" });
+
+        // Base64 encode the URL correctly for VT V3 API
         const urlId = Buffer.from(url).toString('base64').replace(/=/g, "");
-        
+
         const response = await axios.get(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
             headers: { 'x-apikey': API_KEY }
         });
@@ -39,8 +35,18 @@ app.post('/analyze', async(req, res) => {
             status: "Success",
             vt_results: response.data.data.attributes.last_analysis_stats
         });
+
     } catch (error) {
-        res.status(500).json({ error: "API lookup failed" });
+        // This is the most important part: handling the "Resource Not Found"
+        if (error.response && error.response.status === 404) {
+            return res.json({
+                status: "New URL",
+                message: "This URL hasn't been scanned by VT yet. Using local heuristics."
+            });
+        }
+
+        console.error("VT API Error:", error.response ? error.response.data : error.message);
+        res.status(500).json({ status: "Error", message: "Internal Server Error" });
     }
 });
 

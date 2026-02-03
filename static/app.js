@@ -10,7 +10,10 @@ button.addEventListener("click", async () => {
     return;
   }
 
-  //Talk to secure backend
+  let vtReport = "No VirusTotal data available.";
+  let vtStatus = "Local Only";
+
+  // --- TALK TO SECURE BACKEND ---
   try {
     const response = await fetch('/analyze', {
       method: 'POST',
@@ -18,27 +21,32 @@ button.addEventListener("click", async () => {
       body: JSON.stringify({ url: url })
     });
     const serverData = await response.json();
-    console.log("Backend Triage Status:", serverData.status);
+
+    // FIX: Check serverData.status instead of just serverData
+    if (serverData.status === "Success") {
+      const stats = serverData.vt_results;
+      vtStatus = "API Success";
+      vtReport = `[VirusTotal Intelligence]\nMalicious: ${stats.malicious} | Suspicious: ${stats.suspicious} | Harmless: ${stats.harmless}`;
+    } else {
+      vtReport = `[VT Warning]: ${serverData.message}`;
+    }
   } catch (err) {
-    console.error("Backend unreachable");
+    vtReport = "[Error]: Backend Unreachable.";
   }
 
-  
+  // --- LOCAL HEURISTIC LOGIC ---
   let riskScore = 0;
   let artifacts = [];
 
-  //IP based hosting
   const ipRegex = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
   if (ipRegex.test(url)) {
     riskScore += 40;
-    artifacts.push("Suspicious Ip-based URL")
+    artifacts.push("Suspicious IP-based URL");
   }
-  //Check for @ in URL
   if (url.includes("@")) {
     riskScore += 50;
-    artifacts.push("Credential Obfscation (@ symbol)");
+    artifacts.push("Credential Obfuscation (@ symbol)");
   }
-  //Check for sensitive keywords in subdomain
   const sensitiveKeywords = ["login", "verify", "update", "banking", "secure"];
   sensitiveKeywords.forEach(word => {
     if (url.toLowerCase().includes(word)) {
@@ -46,25 +54,21 @@ button.addEventListener("click", async () => {
       artifacts.push(`Urgency Keyword Detected: ${word}`);
     }
   });
-  //Check for excessive subdomains
   const dotCount = (url.match(/\./g) || []).length;
   if (dotCount > 3) {
     riskScore += 20;
     artifacts.push("Excessive Subdomains detected");
   }
 
-  // --- DEFANGING FOR SAFETY ---
+  // --- DEFANGING & FINAL REPORT ---
   const defanged = url.replace(/http/g, "hXXp").replace(/\./g, "[.]");
 
-  // --- VERDICT LOGIC ---
-  if (riskScore >= 40) {
-    const report = `MALICIOUS ACTIVITY DETECTED\nRisk Score: ${riskScore}\nDefanged: ${defanged}\n\nArtifacts:\n${artifacts.join("\n")}`;
-    showResult(report, "phishing");
-  }
-  else {
-    showResult(`URL APPEARS CLEAN\nDefanged: ${defanged}\nNo immediate IOCs found.`, "legit");
-  }
+  const header = riskScore >= 40 ? "⚠️ MALICIOUS ACTIVITY DETECTED" : "✅ URL APPEARS CLEAN";
+  const finalType = riskScore >= 40 ? "phishing" : "legit";
 
+  const fullReport = `${header}\n---------------\nRisk Score: ${riskScore}\nDefanged: ${defanged}\n\n${vtReport}\n\nArtifacts:\n${artifacts.length > 0 ? artifacts.join("\n") : "No local IOCs found."}`;
+
+  showResult(fullReport, finalType);
 });
 
 function showResult(text, type) {
